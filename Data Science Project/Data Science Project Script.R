@@ -252,3 +252,76 @@ ggplot(sales_composition_by_genre, aes(x = reorder(Genre, -Total_Log_Sales), y =
        y = "Total Log Sales") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_brewer(palette = "Set1", name = "Region")
+
+# Define the reference date
+reference_date <- as.Date("2023-04-30")
+
+# Calculate the age of each game in years
+video_game_data <- video_game_data %>%
+  mutate(Age_Years = as.numeric(difftime(reference_date, date, units = "weeks")) / 52)
+
+# Calculate the average sales per year for each video game
+video_game_data <- video_game_data %>%
+  mutate(Average_Sales = log_Global_Sales / Age_Years)
+
+# Box plot of Average_Sales across genres
+ggplot(video_game_data, aes(x = Genre, y = Average_Sales)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Average Sales Distribution by Genre",
+       x = "Genre",
+       y = "Average Sales") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# 4. Hypothesis Testing and Correlation Analysis
+
+# Test correlation between user and meta scores with total and average sales
+# Correlation test for User_Rating and log_Global_Sales
+cor.test(video_game_data$User_Rating, video_game_data$log_Global_Sales)
+
+# Correlation test for User_Rating and Average_Sales
+cor.test(video_game_data$User_Rating, video_game_data$Average_Sales)
+
+# Correlation test for Meta_Score and log_Global_Sales
+cor.test(video_game_data$Meta_Score, video_game_data$log_Global_Sales)
+
+# Correlation test for Meta_Score and Average_Sales
+cor.test(video_game_data$Meta_Score, video_game_data$Average_Sales)
+
+#Test correlation between various genres and total sales numbers
+# Create a new column indicating whether the genre is Action, Sports, or Shooter
+video_game_data <- video_game_data %>%
+  mutate(Genre_Positive = ifelse(Genre %in% c("Action", "Sports", "Shooter"), "Positive", "Other"))
+
+# Perform chi-squared test for the association between Genre_Positive and log_Global_Sales
+chisq.test(video_game_data$Genre_Positive, cut(video_game_data$log_Global_Sales, breaks = 4))
+
+# Perform chi-squared test for the association between Genre_Positive and Average_Sales
+chisq.test(video_game_data$Genre_Positive, cut(video_game_data$Average_Sales, breaks = 4))
+
+# Create a new column indicating whether the genre is Simulation, Adventure, or Strategy
+video_game_data <- video_game_data %>%
+  mutate(Genre_Negative = ifelse(Genre %in% c("Simulation", "Adventure", "Strategy"), "Negative", "Other"))
+
+# Perform chi-squared test for the association between Genre_Negative and log_Global_Sales
+chisq.test(video_game_data$Genre_Negative, cut(video_game_data$log_Global_Sales, breaks = 4))
+
+# Perform chi-squared test for the association between Genre_Negative and Average_Sales
+chisq.test(video_game_data$Genre_Negative, cut(video_game_data$Average_Sales, breaks = 4))
+
+"""
+Based on the results of the tests performed, we can interpret the outcomes in the context of your stated hypotheses as follows:
+
+User score is positively correlated with total and average sales.
+Both p-values are < 2.2e-16, which is less than the 0.05 significance level. This suggests that there is a significant positive correlation between user score and both total and average sales.
+Meta score is positively correlated with total and average sales.
+Both p-values are < 2.2e-16, which is less than the 0.05 significance level. This suggests that there is a significant positive correlation between meta score and both total and average sales.
+The Action, Sports, and Shooter genres are positively correlated with total and average sales.
+The p-value for the association between the Action, Sports, and Shooter genres and total sales (log_Global_Sales) is 0.003126, which is less than the 0.05 significance level. This suggests that there is a significant association between these genres and higher total sales.
+The p-value for the association between the Action, Sports, and Shooter genres and average sales (Average_Sales) is 0.07418, which is greater than the 0.05 significance level. This suggests that there is no significant association between these genres and higher average sales.
+The Simulation, Adventure, and Strategy genres are negatively correlated with total and average sales.
+The p-value for the association between the Simulation, Adventure, and Strategy genres and total sales (log_Global_Sales) is 4.426e-07, which is less than the 0.05 significance level. This suggests that there is a significant association between these genres and lower total sales.
+The p-value for the association between the Simulation, Adventure, and Strategy genres and average sales (Average_Sales) is 0.006827, which is less than the 0.05 significance level. This suggests that there is a significant association between these genres and lower average sales.
+In summary, your hypotheses regarding user scores, meta scores, and the genres of Simulation, Adventure, and Strategy are supported by the data. The hypothesis regarding the Action, Sports, and Shooter genres is supported for total sales but not for average sales.
+
+"""
