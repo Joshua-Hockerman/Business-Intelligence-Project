@@ -4,7 +4,7 @@ library(tidyverse)
 library(readxl)
 
 # Read the dataset
-video_game_data <- read_excel("~/R Programs/Business Intelligence/Data Science Project/VideoGameData.xlsx")
+video_game_data <- read_excel("Data Science Project/VideoGameData.xlsx")
 
 # Inspect the data types and summary statistics
 glimpse(video_game_data)
@@ -165,4 +165,70 @@ ggplot(video_game_data, aes(x = User_Rating, y = log_JP_Sales)) +
        x = "User Rating",
        y = "Log JP Sales") +
   theme_minimal()
+
+install.packages('corrplot')
+# Load necessary libraries
+library(ggplot2)
+library(corrplot)
+
+# Calculate correlations between numeric variables
+correlations <- cor(video_game_data %>% 
+                      select(Meta_Score, User_Rating, log_NA_Sales, log_EU_Sales, log_JP_Sales, log_Other_Sales, log_Global_Sales))
+
+# Create a correlation heatmap
+corrplot(correlations, method = "color", type = "upper", tl.col = "black", addCoef.col = "black")
+
+# Box plot of Meta_Score across genres
+ggplot(video_game_data, aes(x = Genre, y = Meta_Score)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Meta Score Distribution by Genre",
+       x = "Genre",
+       y = "Meta Score") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Box plot of User_Rating across genres
+ggplot(video_game_data, aes(x = Genre, y = User_Rating)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "User Rating Distribution by Genre",
+       x = "Genre",
+       y = "User Rating") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Average Meta_Score by Genre
+average_meta_score_by_genre <- video_game_data %>%
+  group_by(Genre) %>%
+  summarize(Average_Meta_Score = mean(Meta_Score, na.rm = TRUE))
+
+# Bar plot of average Meta_Score across genres
+ggplot(average_meta_score_by_genre, aes(x = reorder(Genre, -Average_Meta_Score), y = Average_Meta_Score)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  theme_minimal() +
+  labs(title = "Average Meta Score by Genre",
+       x = "Genre",
+       y = "Average Meta Score") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Total log sales by release year
+total_log_sales_by_year <- video_game_data %>%
+  group_by(Release_Year) %>%
+  summarize(Total_Log_Sales = sum(log_Global_Sales, na.rm = TRUE))
+
+# Line plot of total log sales over time
+ggplot(total_log_sales_by_year, aes(x = Release_Year, y = Total_Log_Sales)) +
+  geom_line(color = "steelblue") +
+  theme_minimal() +
+  labs(title = "Total Log Sales Over Time",
+       x = "Release Year",
+       y = "Total Log Sales")
+
+# Scatter plot of Meta_Score vs. log_NA_Sales, facetted by Genre
+ggplot(video_game_data, aes(x = Meta_Score, y = log_NA_Sales)) +
+  geom_point(alpha = 0.5, color = "steelblue") +
+  facet_wrap(~Genre) +
+  theme_minimal() +
+  labs(title = "Meta Score vs. Log North America Sales by Genre",
+       x = "Meta Score",
+       y = "Log NA Sales")
 
