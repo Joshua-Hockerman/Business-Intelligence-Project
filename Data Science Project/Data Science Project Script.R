@@ -232,3 +232,23 @@ ggplot(video_game_data, aes(x = Meta_Score, y = log_NA_Sales)) +
        x = "Meta Score",
        y = "Log NA Sales")
 
+# Sales composition by genre
+sales_composition_by_genre <- video_game_data %>%
+  group_by(Genre) %>%
+  summarize(
+    Total_Log_NA_Sales = sum(log_NA_Sales, na.rm = TRUE),
+    Total_Log_EU_Sales = sum(log_EU_Sales, na.rm = TRUE),
+    Total_Log_JP_Sales = sum(log_JP_Sales, na.rm = TRUE),
+    Total_Log_Other_Sales = sum(log_Other_Sales, na.rm = TRUE)
+  ) %>%
+  gather(key = "Region", value = "Total_Log_Sales", -Genre)
+
+# Stacked bar plot of log sales composition by genre
+ggplot(sales_composition_by_genre, aes(x = reorder(Genre, -Total_Log_Sales), y = Total_Log_Sales, fill = Region)) +
+  geom_bar(stat = "identity", position = "stack") +
+  theme_minimal() +
+  labs(title = "Log Sales Composition by Genre",
+       x = "Genre",
+       y = "Total Log Sales") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Set1", name = "Region")
