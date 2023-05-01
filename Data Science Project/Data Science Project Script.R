@@ -2,6 +2,10 @@
 # Load necessary libraries
 library(tidyverse)
 library(readxl)
+library(dplyr)
+library(ggplot2)
+library(corrplot)
+library(cor.test)
 
 # Read the dataset
 video_game_data <- read_excel("Data Science Project/VideoGameData.xlsx")
@@ -45,9 +49,6 @@ video_game_data <- video_game_data %>%
 
 
 ## Step 3: Visualization
-# Load necessary libraries
-library(ggplot2)
-
 # Sum the Global_Sales by Genre
 sales_by_genre <- video_game_data %>%
   group_by(Genre) %>%
@@ -165,11 +166,6 @@ ggplot(video_game_data, aes(x = User_Rating, y = log_JP_Sales)) +
        x = "User Rating",
        y = "Log JP Sales") +
   theme_minimal()
-
-install.packages('corrplot')
-# Load necessary libraries
-library(ggplot2)
-library(corrplot)
 
 # Calculate correlations between numeric variables
 correlations <- cor(video_game_data %>% 
@@ -325,3 +321,96 @@ The p-value for the association between the Simulation, Adventure, and Strategy 
 In summary, your hypotheses regarding user scores, meta scores, and the genres of Simulation, Adventure, and Strategy are supported by the data. The hypothesis regarding the Action, Sports, and Shooter genres is supported for total sales but not for average sales.
 
 """
+
+# Calculate the average meta score for each publisher
+publisher_meta_scores <- video_game_data %>%
+  group_by(Publisher) %>%
+  summarize(Avg_Meta_Score = mean(Meta_Score, na.rm = TRUE))
+
+# Calculate regional sales as a percentage of total sales for each publisher
+publisher_sales <- video_game_data %>%
+  group_by(Publisher) %>%
+  summarize(
+    NA_Sales_Percentage = sum(NA_Sales) / sum(Global_Sales),
+    EU_Sales_Percentage = sum(EU_Sales) / sum(Global_Sales),
+    JP_Sales_Percentage = sum(JP_Sales) / sum(Global_Sales),
+    Other_Sales_Percentage = sum(Other_Sales) / sum(Global_Sales)
+  )
+
+# Join the average meta score data with the regional sales percentage data
+publisher_data <- inner_join(publisher_meta_scores, publisher_sales, by = "Publisher")
+
+# Select the top 25 publishers based on their average meta scores
+top_publishers <- publisher_data %>%
+  arrange(desc(Avg_Meta_Score)) %>%
+  head(25)
+
+# Create a correlation matrix
+cor_matrix <- cor(top_publishers[, -1])
+
+# Plot the correlation heatmap
+corrplot(cor_matrix, method = "square", type = "upper", tl.col = "black", tl.srt = 45)
+  
+# Select the top 25 publishers based on their average meta scores
+top_publishers <- publisher_data %>%
+  arrange(desc(Avg_Meta_Score)) %>%
+  head(25)
+
+# Reshape the data to a long format suitable for ggplot2
+top_publishers_long <- top_publishers %>%
+  select(Publisher, Avg_Meta_Score, NA_Sales_Percentage, EU_Sales_Percentage, JP_Sales_Percentage, Other_Sales_Percentage) %>%
+  gather(key = "Region", value = "Sales_Percentage", -Publisher, -Avg_Meta_Score)
+
+# Create the matrix plot
+ggplot(top_publishers_long, aes(x = Region, y = reorder(Publisher, -Avg_Meta_Score), fill = Sales_Percentage)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Region", y = "Publisher", fill = "Sales %", title = "Top 25 Publishers: Regional Sales as a Percentage of Total Sales")
+
+
+# Calculate Pearson correlation coefficients for each region and meta/user scores
+cor_meta_na <- cor.test(video_game_data$Meta_Score, video_game_data$NA_Sales)
+cor_meta_eu <- cor.test(video_game_data$Meta_Score, video_game_data$EU_Sales)
+cor_meta_jp <- cor.test(video_game_data$Meta_Score, video_game_data$JP_Sales)
+cor_meta_other <- cor.test(video_game_data$Meta_Score, video_game_data$Other_Sales)
+
+cor_user_na <- cor.test(video_game_data$User_Rating, video_game_data$NA_Sales)
+cor_user_eu <- cor.test(video_game_data$User_Rating, video_game_data$EU_Sales)
+cor_user_jp <- cor.test(video_game_data$User_Rating, video_game_data$JP_Sales)
+cor_user_other <- cor.test(video_game_data$User_Rating, video_game_data$Other_Sales)
+
+# Print the correlation coefficients and p-values
+cat("Meta Score and NA Sales: Correlation =", cor_meta_na$estimate, "P-value =", cor_meta_na$p.value, "\n")
+cat("Meta Score and EU Sales: Correlation =", cor_meta_eu$estimate, "P-value =", cor_meta_eu$p.value, "\n")
+cat("Meta Score and JP Sales: Correlation =", cor_meta_jp$estimate, "P-value =", cor_meta_jp$p.value, "\n")
+cat("Meta Score and Other Sales: Correlation =", cor_meta_other$estimate, "P-value =", cor_meta_other$p.value, "\n")
+cat("\n")
+cat("User Rating and NA Sales: Correlation =", cor_user_na$estimate, "P-value =", cor_user_na$p.value, "\n")
+cat("User Rating and EU Sales: Correlation =", cor_user_eu$estimate, "P-value =", cor_user_eu$p.value, "\n")
+cat("User Rating and JP Sales: Correlation =", cor_user_jp$estimate, "P-value =", cor_user_jp$p.value, "\n")
+cat("User Rating and Other Sales: Correlation =", cor_user_other$estimate, "P-value =", cor_user_other$p.value, "\n")
+
+"""
+Based on these results, it appears that there are some differences in the strength of correlations between ratings (both Meta Score and User Rating) and sales in different regions. However, all of the correlations are positive, indicating that higher ratings are generally associated with higher sales in all regions.
+
+To compare the correlations, let's take a closer look at the correlation coefficients and p-values:
+
+Meta Score correlations:
+NA Sales: Correlation = 0.2442, P-value < 0.0001
+EU Sales: Correlation = 0.2208, P-value < 0.0001
+JP Sales: Correlation = 0.1858, P-value < 0.0001
+Other Sales: Correlation = 0.2041, P-value < 0.0001
+User Rating correlations:
+NA Sales: Correlation = 0.1135, P-value < 0.0001
+EU Sales: Correlation = 0.0834, P-value < 0.0001
+JP Sales: Correlation = 0.1628, P-value < 0.0001
+Other Sales: Correlation = 0.0820, P-value < 0.0001
+All the p-values are highly significant (p < 0.0001), which indicates that the correlations are statistically significant and not due to random chance.
+
+Although the correlation coefficients differ somewhat among regions, the differences are not extremely large. Overall, the results suggest that higher ratings are associated with higher sales across all regions, but the strength of this association varies. The association between Meta Score and sales is generally stronger than that between User Rating and sales.
+
+In summary, there are some differences in the strength of correlations between ratings and sales in different regions, but the overall positive relationship between higher ratings and higher sales is consistent across all regions.
+"""
+
